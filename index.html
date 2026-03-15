@@ -451,8 +451,8 @@ let kx=makeK(),ky=makeK();
 //
 // Uses raw (unsmoothed) Y for sensitivity.
 // ═══════════════════════════════════════
-const TAP_VEL_THRESH = 0.055;  // needs strong deliberate tap
-const TAP_COOLDOWN_MS = 1000;  // 1 second between taps
+const TAP_VEL_THRESH = 0.038;  // quicker tap needed
+const TAP_COOLDOWN_MS = 700;   // faster re-trigger
 
 let prevRawY  = null;
 let tapCooldown = 0;           // countdown frames
@@ -460,7 +460,7 @@ let velHistory = [];           // last N velocities
 const VEL_WIN  = 3;
 
 // Settle guard: finger must be on same key for this many frames before tap fires
-const SETTLE_FRAMES = 6;
+const SETTLE_FRAMES = 4;
 let settleKey   = null;
 let settleCount = 0;
 
@@ -543,7 +543,7 @@ function setChip(s,lbl){
 // GESTURE COOLDOWN FLAGS
 // ═══════════════════════════════════════
 let fiveFired=false,twoFired=false;
-const SPECIAL_CD=1000;
+const SPECIAL_CD=700;
 let lastSpecial=0;
 
 // ═══════════════════════════════════════
