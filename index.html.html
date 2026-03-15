@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AirType</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+
+:root{
+  --bg:#08080f;
+  --surface:#0f0f1a;
+  --panel:#161625;
+  --border:#ffffff0d;
+  --accent:#6c63ff;
+  --green:#00e676;
+  --red:#ff453a;
+  --yellow:#ffd60a;
+  --text:#f0f0ff;
+  --dim:#5a5a7a;
+  --key-bg:#1c1c30;
+  --key-border:#2a2a4a;
+  --key-hover:#252548;
+  --key-press:#6c63ff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg);color:var(--text);
+  height:100vh;display:flex;flex-direction:column;
+  overflow:hidden;user-select:none;
+}
+
+/* TOP BAR */
+#bar{
+  display:flex;align-items:center;gap:9px;
+  padding:7px 16px;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.logo{
+  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.92rem;
+  background:linear-gradient(135deg,#6c63ff,#ff63a5);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+#chip{
+  display:flex;align-items:center;gap:6px;
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:20px;padding:4px 11px;
+  font-size:.68rem;color:var(--dim);min-width:150px;
+  transition:border-color .12s;
+}
+#chip .dot{
+  width:7px;height:7px;border-radius:50%;background:#2a2a4a;
+  flex-shrink:0;transition:background .1s,box-shadow .1s;
+}
+#chip.s-hover .dot{background:var(--yellow);box-shadow:0 0 6px #ffd60a99;}
+#chip.s-tap   .dot{background:var(--green); box-shadow:0 0 8px #00e67699;}
+#chip.s-bs    .dot{background:var(--red);   box-shadow:0 0 6px #ff453a88;}
+#chip.s-sp    .dot{background:var(--accent);box-shadow:0 0 6px #6c63ff88;}
+
+.ml{margin-left:auto;display:flex;gap:6px;}
+.btn{
+  height:26px;padding:0 11px;border-radius:6px;
+  border:1px solid var(--border);background:var(--panel);
+  color:var(--dim);cursor:pointer;font-size:.68rem;
+  font-family:'Inter',sans-serif;
+  display:flex;align-items:center;gap:4px;
+  transition:all .12s;white-space:nowrap;
+}
+.btn:hover{border-color:var(--accent);color:var(--text);}
+.btn.r:hover{border-color:var(--red);color:var(--red);}
+
+/* MAIN */
+main{flex:1;display:flex;overflow:hidden;}
+
+/* BOARD */
+#board{
+  flex:1;display:flex;flex-direction:column;
+  padding:12px 16px 8px;gap:8px;overflow:hidden;
+}
+
+/* TEXT OUTPUT */
+#out{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:11px 15px;
+  min-height:68px;max-height:110px;overflow-y:auto;
+  font-family:'JetBrains Mono',monospace;font-size:1.05rem;
+  color:var(--text);line-height:1.65;word-break:break-all;
+  flex-shrink:0;transition:border-color .15s;
+}
+#out.fl{border-color:#6c63ff66;}
+#out::-webkit-scrollbar{width:3px;}
+#out::-webkit-scrollbar-thumb{background:#3a3a5a;}
+#caret{
+  display:inline-block;width:2px;height:1.05em;
+  background:var(--accent);vertical-align:middle;margin-left:1px;
+  animation:blink 1s step-end infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+#cc{font-size:.6rem;color:var(--dim);font-family:'JetBrains Mono',monospace;text-align:right;}
+
+/* KEYBOARD WRAPPER — flex-1 so it fills remaining space */
+#kbwrap{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+}
+#dotCvs{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;z-index:20;
+}
+
+/* KEYBOARD */
+#kb{display:flex;flex-direction:column;gap:5px;}
+.row{display:flex;gap:4px;justify-content:center;}
+
+.key{
+  position:relative;
+  min-width:48px;height:48px;
+  background:var(--key-bg);border:2px solid var(--key-border);
+  border-radius:9px;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  flex-shrink:0;
+  transition:background .07s,border-color .07s,transform .06s,box-shadow .07s;
+}
+.key .kc{
+  font-family:'JetBrains Mono',monospace;font-size:.86rem;font-weight:600;
+  color:var(--text);line-height:1;pointer-events:none;
+}
+.key .ks{font-size:.46rem;color:var(--dim);pointer-events:none;margin-top:1px;}
+.key.w2{min-width:76px;}.key.w3{min-width:96px;}
+.key.sp{min-width:250px;}.key.bs{min-width:86px;}.key.en{min-width:94px;}
+
+/* hover */
+.key.hov{
+  background:var(--key-hover);border-color:var(--accent);
+  box-shadow:0 0 12px #6c63ff44;transform:scale(1.07);
+}
+/* tap flash */
+.key.tap{
+  background:var(--key-press);border-color:var(--accent);
+  box-shadow:0 0 22px #6c63ffaa;transform:scale(.93);
+}
+.key.tap .kc{color:#fff;}
+
+/* tap ripple bar */
+.key .bar{
+  position:absolute;bottom:0;left:0;
+  height:3px;width:0%;background:var(--accent);
+  border-radius:0 0 7px 7px;transition:width .05s;
+}
+
+/* SIDE */
+#side{
+  width:188px;flex-shrink:0;
+  background:var(--surface);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;overflow-y:auto;
+  transition:width .25s,opacity .25s;
+}
+#side.hidden{width:0;opacity:0;overflow:hidden;}
+#side::-webkit-scrollbar{width:3px;}
+#side::-webkit-scrollbar-thumb{background:var(--border);}
+
+.cambox{position:relative;width:100%;aspect-ratio:4/3;background:#000;flex-shrink:0;}
+#video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block;}
+#hcvs{position:absolute;top:0;left:0;width:100%;height:100%;transform:scaleX(-1);pointer-events:none;}
+.gate{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:7px;
+  background:rgba(8,8,15,.95);text-align:center;padding:12px;
+  transition:opacity .25s;
+}
+.gate.off{opacity:0;pointer-events:none;}
+.gate .gi{font-size:1.5rem;}
+.gate strong{color:var(--text);font-size:.76rem;}
+.gate p{font-size:.66rem;color:var(--dim);line-height:1.5;}
+.sbtn{
+  background:var(--accent);color:#fff;border:none;
+  border-radius:7px;padding:6px 14px;
+  font-family:'Inter',sans-serif;font-size:.72rem;font-weight:500;cursor:pointer;
+}
+.sbtn:hover{background:#5a52e0;}
+
+.cw{padding:8px 11px;}
+.cl{font-size:.58rem;color:var(--dim);margin-bottom:3px;}
+.ct{height:3px;background:var(--border);border-radius:99px;overflow:hidden;}
+.cf{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#ff63a5);border-radius:99px;transition:width .07s;}
+
+.sep{height:1px;background:var(--border);}
+
+/* tap meter */
+.tap-meter{padding:8px 11px;}
+.tm-lbl{font-size:.58rem;color:var(--dim);margin-bottom:4px;}
+.tm-track{height:6px;background:var(--border);border-radius:99px;overflow:hidden;position:relative;}
+.tm-fill{height:100%;width:0%;background:var(--green);border-radius:99px;transition:width .04s;}
+.tm-thresh{
+  position:absolute;top:0;bottom:0;width:2px;background:#ffd60a88;
+  border-radius:1px;
+}
+
+.coords{padding:6px 11px;}
+.cvlbl{font-size:.58rem;color:var(--dim);margin-bottom:3px;}
+.cvval{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--accent);}
+
+.guide{padding:8px 11px;display:flex;flex-direction:column;gap:4px;}
+.ghd{font-size:.57rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:2px;}
+.gr{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 7px;background:var(--panel);
+  border:1px solid var(--border);border-radius:6px;font-size:.65rem;
+  transition:border-color .12s,background .12s;
+}
+.gr.lit{border-color:var(--accent);background:rgba(108,99,255,.1);}
+.gr .em{font-size:.82rem;flex-shrink:0;}
+.gr .gt{color:var(--dim);line-height:1.3;}
+.gr .gt b{color:var(--text);}
+
+/* Toast */
+#toast{
+  position:fixed;bottom:12px;left:50%;
+  transform:translateX(-50%) translateY(48px);
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:9px;padding:6px 15px;
+  font-size:.72rem;color:var(--text);z-index:999;
+  pointer-events:none;
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1);
+  white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.6);
+}
+#toast.show{transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<div id="bar">
+  <div class="logo">⌨ AirType</div>
+  <div id="chip"><div class="dot"></div><span id="chipTxt">No hand</span></div>
+  <div class="ml">
+    <button class="btn" id="camBtn">👁 Hide Cam</button>
+    <button class="btn" id="copyBtn">📋 Copy</button>
+    <button class="btn r" id="clearBtn">🗑 Clear</button>
+  </div>
+</div>
+
+<main>
+  <div id="board">
+    <div id="out"><span id="txt"></span><span id="caret"></span></div>
+    <div id="cc">0 chars</div>
+    <div id="kbwrap">
+      <canvas id="dotCvs"></canvas>
+      <div id="kb"></div>
+    </div>
+  </div>
+
+  <div id="side">
+    <div class="cambox">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="hcvs"></canvas>
+      <div class="gate" id="gate">
+        <div class="gi">🎥</div>
+        <strong>Enable Camera</strong>
+        <p>Point index at key.<br>Quick tap down to type.</p>
+        <button class="sbtn" id="startBtn">Start Camera</button>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="cw">
+      <div class="cl">Hand confidence</div>
+      <div class="ct"><div class="cf" id="cf"></div></div>
+    </div>
+    <div class="sep"></div>
+
+    <!-- TAP VELOCITY METER -->
+    <div class="tap-meter">
+      <div class="tm-lbl">Tap velocity (↓ = tap)</div>
+      <div class="tm-track">
+        <div class="tm-fill" id="tmFill"></div>
+        <div class="tm-thresh" id="tmThresh"></div>
+      </div>
+    </div>
+    <div class="sep"></div>
+
+    <div class="coords">
+      <div class="cvlbl">Index fingertip</div>
+      <div class="cvval" id="cvval">x: —  y: —</div>
+    </div>
+    <div class="sep"></div>
+    <div class="guide">
+      <div class="ghd">Gestures</div>
+      <div class="gr" id="g1"><span class="em">☝️</span><span class="gt"><b>Hover</b> — index finger up</span></div>
+      <div class="gr" id="g2"><span class="em">👇</span><span class="gt"><b>Tap key</b> — quick flick down</span></div>
+      <div class="gr" id="g3"><span class="em">✌️</span><span class="gt"><b>Space</b> — 2 fingers up</span></div>
+      <div class="gr" id="g4"><span class="em">🖐</span><span class="gt"><b>Backspace</b> — 5 fingers open</span></div>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1640029074/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1620248257/drawing_utils.js" crossorigin="anonymous"></script>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════
+// KEYBOARD LAYOUT
+// ═══════════════════════════════════════
+const ROWS=[
+  ['`','1','2','3','4','5','6','7','8','9','0','-','=','⌫'],
+  ['Q','W','E','R','T','Y','U','I','O','P','[',']','\\'],
+  ['A','S','D','F','G','H','J','K','L',';',"'",'↵'],
+  ['Z','X','C','V','B','N','M',',','.','/'],
+  ['SPACE'],
+];
+const WCLS={'⌫':'bs','↵':'en','SPACE':'sp'};
+const CMAP={'SPACE':' ','⌫':'BS','↵':'\n'};
+
+// Build keyboard
+const kbEl=document.getElementById('kb');
+const allKeys=[];
+
+ROWS.forEach(row=>{
+  const rEl=document.createElement('div');
+  rEl.className='row';
+  row.forEach(k=>{
+    const el=document.createElement('div');
+    el.className='key'+(WCLS[k]?' '+WCLS[k]:'');
+    el.dataset.k=k;
+    const lbl=k;
+    const sub=k==='⌫'?'BKSP':k==='↵'?'ENTER':k==='SPACE'?'':'';;
+    el.innerHTML=`<div class="kc">${lbl}</div>${sub?`<div class="ks">${sub}</div>`:''}<div class="bar"></div>`;
+    rEl.appendChild(el);
+    allKeys.push({el,char:k});
+  });
+  kbEl.appendChild(rEl);
+});
+
+// ═══════════════════════════════════════
+// TEXT
+// ═══════════════════════════════════════
+let text='';
+const txtEl=document.getElementById('txt');
+const ccEl=document.getElementById('cc');
+function insert(ch){
+  if(ch==='BS'){text=text.slice(0,-1);}
+  else{text+=ch;}
+  txtEl.textContent=text;
+  ccEl.textContent=text.length+' chars';
+  const o=document.getElementById('out');
+  o.classList.add('fl');setTimeout(()=>o.classList.remove('fl'),180);
+  o.scrollTop=o.scrollHeight;
+}
+document.getElementById('clearBtn').onclick=()=>{text='';txtEl.textContent='';ccEl.textContent='0 chars';toast('Cleared');};
+document.getElementById('copyBtn').onclick=()=>{
+  navigator.clipboard.writeText(text).then(()=>toast('Copied!')).catch(()=>{
+    const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();toast('Copied!');
+  });
+};
+
+// ═══════════════════════════════════════
+// CAM TOGGLE
+// ═══════════════════════════════════════
+let camVis=true;
+document.getElementById('camBtn').onclick=()=>{
+  camVis=!camVis;
+  document.getElementById('side').classList.toggle('hidden',!camVis);
+  document.getElementById('camBtn').textContent=camVis?'👁 Hide Cam':'👁 Show Cam';
+};
+
+// ═══════════════════════════════════════
+// DOT CANVAS
+// ═══════════════════════════════════════
+const dotCvs=document.getElementById('dotCvs');
+const dctx=dotCvs.getContext('2d');
+
+function resizeDot(){
+  const r=document.getElementById('kbwrap').getBoundingClientRect();
+  dotCvs.width=r.width;dotCvs.height=r.height;
+}
+window.addEventListener('resize',()=>{resizeDot();setTimeout(rebuildRects,80);});
+setTimeout(()=>{resizeDot();rebuildRects();},300);
+
+function drawDot(x,y,state){
+  dctx.clearRect(0,0,dotCvs.width,dotCvs.height);
+  if(x===null)return;
+  const c=state==='tap'?'#00e676':state==='hover'?'#6c63ff':'#fff4';
+  const g=dctx.createRadialGradient(x,y,2,x,y,20);
+  g.addColorStop(0,c+'cc');g.addColorStop(1,'transparent');
+  dctx.beginPath();dctx.arc(x,y,20,0,Math.PI*2);
+  dctx.fillStyle=g;dctx.fill();
+  dctx.beginPath();dctx.arc(x,y,5,0,Math.PI*2);
+  dctx.fillStyle=c;dctx.fill();
+  dctx.beginPath();dctx.arc(x,y,8,0,Math.PI*2);
+  dctx.strokeStyle=c+'88';dctx.lineWidth=1.5;dctx.stroke();
+}
+
+// ═══════════════════════════════════════
+// KEY RECTS
+// ═══════════════════════════════════════
+let kRects=[];
+function rebuildRects(){
+  const base=document.getElementById('kbwrap').getBoundingClientRect();
+  kRects=allKeys.map(({el,char})=>{
+    const r=el.getBoundingClientRect();
+    return{el,char,l:r.left-base.left,t:r.top-base.top,r:r.right-base.left,b:r.bottom-base.top};
+  });
+}
+function hitKey(x,y){
+  for(const k of kRects)if(x>=k.l&&x<=k.r&&y>=k.t&&y<=k.b)return k;
+  return null;
+}
+
+// ═══════════════════════════════════════
+// HOVER STATE
+// ═══════════════════════════════════════
+let hovKey=null;
+function setHov(kr){
+  if(hovKey&&hovKey!==kr){hovKey.el.classList.remove('hov');}
+  hovKey=kr||null;
+  if(hovKey)hovKey.el.classList.add('hov');
+}
+
+// ═══════════════════════════════════════
+// PRESS KEY
+// ═══════════════════════════════════════
+function pressKey(kr){
+  if(!kr)return;
+  kr.el.classList.remove('hov');
+  kr.el.classList.add('tap');
+  setTimeout(()=>kr.el.classList.remove('tap'),130);
+  const ch=CMAP[kr.char]!==undefined?CMAP[kr.char]:kr.char;
+  insert(ch==='BS'?'BS':ch);
+}
+
+// ═══════════════════════════════════════
+// KALMAN — light smoothing for hover, 
+// but we use RAW Y for tap detection
+// ═══════════════════════════════════════
+function makeK(R=0.008,Q=2.5){
+  let x=null,P=1;
+  return z=>{if(x===null){x=z;return z;}P+=Q;const K=P/(P+R);x+=K*(z-x);P=(1-K)*P;return x;};
+}
+let kx=makeK(),ky=makeK();
+
+// ═══════════════════════════════════════
+// TAP DETECTOR
+//
+// Tap = index tip Y drops sharply then
+// recovers. We track velocity (dy per frame)
+// and trigger when velocity crosses threshold.
+//
+// Uses raw (unsmoothed) Y for sensitivity.
+// ═══════════════════════════════════════
+const TAP_VEL_THRESH = 0.055;  // needs strong deliberate tap
+const TAP_COOLDOWN_MS = 1000;  // 1 second between taps
+
+let prevRawY  = null;
+let tapCooldown = 0;           // countdown frames
+let velHistory = [];           // last N velocities
+const VEL_WIN  = 3;
+
+// Settle guard: finger must be on same key for this many frames before tap fires
+const SETTLE_FRAMES = 6;
+let settleKey   = null;
+let settleCount = 0;
+
+// For tap meter display
+const tmFill  = document.getElementById('tmFill');
+const tmThresh= document.getElementById('tmThresh');
+// Position threshold marker
+tmThresh.style.left=(TAP_VEL_THRESH/0.08*100).toFixed(0)+'%';
+
+function updateTapMeter(vel){
+  const pct=Math.min(100,(vel/0.08)*100);
+  tmFill.style.width=pct+'%';
+  tmFill.style.background=vel>TAP_VEL_THRESH?'var(--green)':'var(--accent)';
+}
+
+let lastTapTime=0;
+
+// Returns true if a tap is detected this frame
+function detectTap(rawY){
+  if(prevRawY===null){prevRawY=rawY;return false;}
+  const vel=rawY-prevRawY; // positive = moving DOWN
+  prevRawY=rawY;
+
+  velHistory.push(vel);
+  if(velHistory.length>VEL_WIN)velHistory.shift();
+
+  // Peak velocity in window
+  const peak=Math.max(...velHistory);
+  updateTapMeter(Math.max(0,peak));
+
+  const now=performance.now();
+  if(peak>TAP_VEL_THRESH && now-lastTapTime>TAP_COOLDOWN_MS){
+    lastTapTime=now;
+    velHistory=[];
+    return true;
+  }
+  return false;
+}
+
+// ═══════════════════════════════════════
+// FINGER UP CHECK
+// ═══════════════════════════════════════
+function fingerUp(lm,tip,mcp){return lm[tip].y<lm[mcp].y;}
+
+// ═══════════════════════════════════════
+// CLASSIFY — only for special gestures
+// Normal = index pointing (hover+tap)
+// ═══════════════════════════════════════
+function classify(lm){
+  const idx  =fingerUp(lm,8, 5);
+  const mid  =fingerUp(lm,12,9);
+  const ring =fingerUp(lm,16,13);
+  const pk   =fingerUp(lm,20,17);
+  const thumb=lm[4].y<lm[3].y;
+
+  // 🖐 All 5 = backspace
+  if(thumb&&idx&&mid&&ring&&pk) return 'five';
+  // ✌️ exactly index+middle = space
+  if(idx&&mid&&!ring&&!pk)      return 'two';
+  // ☝️ index only = hover
+  if(idx&&!mid&&!ring&&!pk)     return 'point';
+
+  return 'idle';
+}
+
+// ═══════════════════════════════════════
+// CHIP UI
+// ═══════════════════════════════════════
+const chip=document.getElementById('chip');
+const chipTxt=document.getElementById('chipTxt');
+const gEls={point:document.getElementById('g1'),tap:document.getElementById('g2'),two:document.getElementById('g3'),five:document.getElementById('g4')};
+
+function setChip(s,lbl){
+  chip.className='s-'+s;chipTxt.textContent=lbl;
+  Object.values(gEls).forEach(e=>e.classList.remove('lit'));
+  if(gEls[s])gEls[s].classList.add('lit');
+}
+
+// ═══════════════════════════════════════
+// GESTURE COOLDOWN FLAGS
+// ═══════════════════════════════════════
+let fiveFired=false,twoFired=false;
+const SPECIAL_CD=1000;
+let lastSpecial=0;
+
+// ═══════════════════════════════════════
+// MAIN HAND HANDLER — called each frame
+// ═══════════════════════════════════════
+function onHand(lm){
+  const tip=lm[8]; // index fingertip (normalized)
+  const g=classify(lm);
+
+  // Map to kbwrap coords (mirror X)
+  const base=document.getElementById('kbwrap').getBoundingClientRect();
+  const fx=(1-tip.x)*base.width;
+  const fy=tip.y*base.height;
+  const sx=kx(fx),sy=ky(fy); // smoothed for display+hover
+  // raw fy for tap velocity (no smoothing = more responsive)
+  const rawFy=tip.y*base.height;
+
+  document.getElementById('cvval').textContent='x:'+(sx|0)+'  y:'+(sy|0);
+
+  const now=performance.now();
+
+  // ── 🖐 BACKSPACE (all 5 fingers) ──
+  if(g==='five'){
+    setHov(null);
+    drawDot(sx,sy,'tap');
+    setChip('bs','🖐  Backspace');
+    if(!fiveFired&&now-lastSpecial>SPECIAL_CD){
+      fiveFired=true;lastSpecial=now;
+      insert('BS');toast('⌫ Backspace');
+    }
+    prevRawY=null;velHistory=[];
+    return;
+  } else fiveFired=false;
+
+  // ── ✌️ SPACE (2 fingers) ──
+  if(g==='two'){
+    setHov(null);
+    drawDot(sx,sy,'hover');
+    setChip('sp','✌️  Space');
+    if(!twoFired&&now-lastSpecial>SPECIAL_CD){
+      twoFired=true;lastSpecial=now;
+      insert(' ');toast('SPACE');
+    }
+    prevRawY=null;velHistory=[];
+    return;
+  } else twoFired=false;
+
+  // ── ☝️ HOVER + TAP (index only) ──
+  if(g==='point'){
+    const kr=hitKey(sx,sy);
+    setHov(kr);
+    drawDot(sx,sy,'hover');
+    setChip('hover','☝️  Hovering'+(kr?' — '+kr.char:''));
+
+    // Settle guard: reset counter if finger moved to a different key
+    if(kr!==settleKey){ settleKey=kr; settleCount=0; }
+    else if(settleCount<SETTLE_FRAMES){ settleCount++; }
+
+    // Tap detection on raw Y — only eligible after finger has settled on key
+    const tapped=detectTap(rawFy);
+    if(tapped && kr && settleCount>=SETTLE_FRAMES){
+      setChip('tap','👇  TAP!');
+      drawDot(sx,sy,'tap');
+      pressKey(kr);
+      settleCount=0; // reset after firing
+      toast('"'+(CMAP[kr.char]!==undefined?CMAP[kr.char]==='\n'?'↵':CMAP[kr.char]:kr.char)+'" typed');
+    }
+    return;
+  }
+
+  // ── IDLE ──
+  setHov(null);
+  drawDot(null,0,0);
+  setChip('','Idle');
+  detectTap(rawFy); // keep velocity buffer fresh
+}
+
+// ═══════════════════════════════════════
+// MEDIAPIPE
+// ═══════════════════════════════════════
+const video=document.getElementById('video');
+const hcvs=document.getElementById('hcvs');
+const hctx2=hcvs.getContext('2d');
+const cfEl=document.getElementById('cf');
+let mpLive=false,noHand=0;
+
+function startCam(){
+  document.getElementById('gate').classList.add('off');
+  navigator.mediaDevices.getUserMedia({
+    video:{width:{ideal:640},height:{ideal:480},facingMode:'user'}
+  }).then(s=>{
+    video.srcObject=s;
+    video.onloadedmetadata=()=>{
+      hcvs.width=video.videoWidth||640;
+      hcvs.height=video.videoHeight||480;
+      initMP();
+    };
+  }).catch(()=>{
+    const g=document.getElementById('gate');
+    g.classList.remove('off');
+    g.innerHTML='<div class="gi">🚫</div><strong style="color:#ff453a">Blocked</strong><p>Allow camera and reload.</p>';
+  });
+}
+document.getElementById('startBtn').onclick=startCam;
+
+function initMP(){
+  const hands=new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`});
+  hands.setOptions({
+    maxNumHands:1,
+    modelComplexity:1,
+    minDetectionConfidence:0.82,
+    minTrackingConfidence:0.8,
+  });
+  hands.onResults(mpCB);
+  const cam=new Camera(video,{onFrame:async()=>{await hands.send({image:video});},width:640,height:480});
+  cam.start();mpLive=true;
+  setTimeout(()=>{resizeDot();rebuildRects();},400);
+  toast('Ready! ☝️ hover a key → quick tap down to type');
+}
+
+function mpCB(res){
+  hctx2.clearRect(0,0,hcvs.width,hcvs.height);
+  if(res.multiHandLandmarks&&res.multiHandLandmarks.length){
+    noHand=0;
+    const lm=res.multiHandLandmarks[0];
+    if(window.drawConnectors&&window.HAND_CONNECTIONS){
+      drawConnectors(hctx2,lm,HAND_CONNECTIONS,{color:'#6c63ff33',lineWidth:1.5});
+      drawLandmarks(hctx2,lm,{color:'#a09fff',lineWidth:1,radius:2});
+    }
+    const sc=res.multiHandedness?.[0]?.score??0.9;
+    cfEl.style.width=(sc*100).toFixed(0)+'%';
+    onHand(lm);
+  } else {
+    noHand++;
+    cfEl.style.width='0%';
+    if(noHand>8){
+      setChip('','No hand');setHov(null);
+      dctx.clearRect(0,0,dotCvs.width,dotCvs.height);
+      fiveFired=false;twoFired=false;
+      prevRawY=null;velHistory=[];
+      settleKey=null;settleCount=0;
+      document.getElementById('cvval').textContent='x: —  y: —';
+      updateTapMeter(0);
+    }
+  }
+}
+
+// ═══════════════════════════════════════
+// MOUSE FALLBACK
+// ═══════════════════════════════════════
+document.getElementById('kbwrap').addEventListener('mousemove',e=>{
+  if(mpLive)return;
+  const r=document.getElementById('kbwrap').getBoundingClientRect();
+  const x=e.clientX-r.left,y=e.clientY-r.top;
+  drawDot(x,y,'hover');setHov(hitKey(x,y));
+});
+document.getElementById('kbwrap').addEventListener('click',e=>{
+  if(mpLive)return;
+  const r=document.getElementById('kbwrap').getBoundingClientRect();
+  const kr=hitKey(e.clientX-r.left,e.clientY-r.top);
+  if(kr)pressKey(kr);
+});
+document.getElementById('kbwrap').addEventListener('mouseleave',()=>{
+  if(mpLive)return;dctx.clearRect(0,0,dotCvs.width,dotCvs.height);setHov(null);
+});
+
+// Physical keyboard fallback
+document.addEventListener('keydown',e=>{
+  if(e.key==='Backspace'){insert('BS');e.preventDefault();}
+  else if(e.key==='Enter'){insert('\n');}
+  else if(e.key.length===1){insert(e.key);}
+});
+
+// ═══════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════
+let _tt;
+function toast(m){
+  const el=document.getElementById('toast');
+  el.textContent=m;el.classList.add('show');
+  clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),1400);
+}
+
+setTimeout(()=>toast('☝️ Hover a key, then quickly tap your finger down!'),700);
+</script>
+</body>
+</html>
